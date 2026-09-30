@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sơ Đồ Lớp Học - Bốc Thăm Chỗ Ngồi</title>
+    <!-- Thư viện pháo hoa xịn -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #2c3e50;
+            --highlight-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --seat-bg: #ffffff;
+            --desk-bg: #e8f4f8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            font-size: 22px;
+        }
+
+        .blackboard {
+            background-color: #1b4332;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            font-weight: bold;
+            font-size: 16px;
+            letter-spacing: 2px;
+            border: 4px solid #b7e4c7;
+        }
+
+        /* Layout 2 Dãy */
+        .seating-plan {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .column {
+            flex: 1;
+            min-width: 280px;
+            max-width: 450px;
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .column-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+
+        .desk {
+            background-color: var(--desk-bg);
+            border: 1px solid #bce0fd;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 12px;
+        }
+
+        .desk-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        .seats-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .seat {
+            flex: 1;
+            height: 45px;
+            background-color: var(--seat-bg);
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            padding: 2px;
+            word-break: break-word;
+            transition: all 0.1s ease;
+            position: relative;
+        }
+
+        .seat.active {
+            background-color: #f1c40f !important;
+            transform: scale(1.1);
+            border: 2px solid #f39c12;
+            z-index: 2;
+            box-shadow: 0 0 12px rgba(241, 196, 15, 0.9);
+        }
+
+        .seat.filled {
+            background-color: #e8f8f5;
+            border: 2px solid #2ecc71;
+            color: #27ae60;
+        }
+
+        .seat.winner {
+            animation: celebrate 0.4s ease-in-out 4;
+        }
+
+        @keyframes celebrate {
+            0% { transform: scale(1); background-color: #2ecc71; color: white; }
+            50% { transform: scale(1.15); background-color: #f1c40f; color: black; }
+            100% { transform: scale(1); background-color: #e8f8f5; color: #27ae60; }
+        }
+
+        /* Bảng điều khiển */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            resize: vertical;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-spin {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .btn-spin:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .btn-reset {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .status {
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Sơ Đồ Sắp Xếp Chỗ Ngồi</h1>
+    
+    <div class="blackboard">BẢNG ĐEN</div>
+
+    <div class="seating-plan">
+        <!-- Dãy Trong (6 bàn x 3 chỗ) -->
+        <div class="column" id="day-trong">
+            <div class="column-title">DÃY TRONG</div>
+        </div>
+
+        <!-- Dãy Ngoài -->
+        <div class="column" id="day-nguai">
+            <div class="column-title">DÃY NGOÀI</div>
+        </div>
+    </div>
+
+    <!-- Bảng Điều Khiển -->
+    <div class="controls">
+        <label for="studentList"><strong>Danh sách học sinh (mỗi tên một dòng):</strong></label>
+        <textarea id="studentList" placeholder="Nhập tên học sinh vào đây..."></textarea>
+        
+        <div class="btn-group">
+            <button class="btn-spin" id="spinBtn" onclick="startSpin()">QUAY CHỖ NGỒI</button>
+            <button class="btn-reset" onclick="resetAll()">LÀM MỚI</button>
+        </div>
+        <div class="status" id="statusText">Sẵn sàng quay</div>
+    </div>
+</div>
+
+<script>
+    let audioCtx = null;
+
+    // Khởi tạo AudioContext
+    function unlockAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    // Âm thanh khi quay
+    function playTickSound() {
+        try {
+            unlockAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(700, audioCtx.currentTime);
+            
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.04);
+        } catch (e) {}
+    }
+
+    // Âm thanh chiến thắng
+    function playWinSound() {
+        try {
+            unlockAudio();
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // Do - Mi - Sol - Do
+            notes.forEach((freq, index) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + index * 0.09);
+                
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime + index * 0.09);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + index * 0.09 + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(audioCtx.currentTime + index * 0.09);
+                osc.stop(audioCtx.currentTime + index * 0.09 + 0.3);
+            });
+        } catch (e) {}
+    }
+
+    // Bắn pháo hoa bằng thư viện Canvas Confetti
+    function triggerConfetti() {
+        if (typeof confetti === 'function') {
+            confetti({
+                particleCount: 80,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+    }
+
+    const dayTrongConfig = [3, 3, 3, 3, 3, 3]; 
+    const dayNgoaiConfig = [2, 3, 3, 3, 3, 2]; 
+
+    let emptySeats = [];
+    let isSpinning = false;
+
+    function renderSeating() {
+        const dayTrongContainer = document.getElementById('day-trong');
+        const dayNgoaiContainer = document.getElementById('day-nguai');
+
+        dayTrongContainer.innerHTML = '<div class="column-title">DÃY TRONG</div>';
+        dayNgoaiContainer.innerHTML = '<div class="column-title">DÃY NGOÀI</div>';
+
+        dayTrongConfig.forEach((seatCount, deskIndex) => {
+            const deskDiv = document.createElement('div');
+            deskDiv.className = 'desk';
+            deskDiv.innerHTML = `<div class="desk-title">Bàn ${deskIndex + 1}</div>`;
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'seats-group';
+            
+            for (let i = 1; i <= seatCount; i++) {
+                const seatDiv = document.createElement('div');
+                seatDiv.className = 'seat';
+                seatDiv.id = `trong-b${deskIndex + 1}-c${i}`;
+                groupDiv.appendChild(seatDiv);
+            }
+            deskDiv.appendChild(groupDiv);
+            dayTrongContainer.appendChild(deskDiv);
+        });
+
+        dayNgoaiConfig.forEach((seatCount, deskIndex) => {
+            const deskDiv = document.createElement('div');
+            deskDiv.className = 'desk';
+            deskDiv.innerHTML = `<div class="desk-title">Bàn ${deskIndex + 1}</div>`;
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'seats-group';
+            
+            for (let i = 1; i <= seatCount; i++) {
+                const seatDiv = document.createElement('div');
+                seatDiv.className = 'seat';
+                seatDiv.id = `ngoai-b${deskIndex + 1}-c${i}`;
+                groupDiv.appendChild(seatDiv);
+            }
+            deskDiv.appendChild(groupDiv);
+            dayNgoaiContainer.appendChild(deskDiv);
+        });
+
+        updateEmptySeatsList();
+    }
+
+    function updateEmptySeatsList() {
+        const allSeats = document.querySelectorAll('.seat');
+        emptySeats = Array.from(allSeats).filter(seat => !seat.classList.contains('filled'));
+    }
+
+    function getStudentArray() {
+        const text = document.getElementById('studentList').value;
+        return text.split('\n').map(name => name.trim()).filter(name => name.length > 0);
+    }
+
+    function setStudentArray(arr) {
+        document.getElementById('studentList').value = arr.join('\n');
+    }
+
+    function startSpin() {
+        unlockAudio(); // Kích hoạt âm thanh khi bấm
+
+        if (isSpinning) return;
+
+        let students = getStudentArray();
+
+        if (students.length === 0) {
+            alert('Vui lòng nhập danh sách học sinh!');
+            return;
+        }
+
+        updateEmptySeatsList();
+
+        if (emptySeats.length === 0) {
+            alert('Đã xếp kín tất cả chỗ ngồi!');
+            return;
+        }
+
+        isSpinning = true;
+        document.getElementById('spinBtn').disabled = true;
+        
+        const currentStudent = students[0];
+        document.getElementById('statusText').innerText = `Đang quay cho: ${currentStudent}`;
+
+        let counter = 0;
+        const totalRuns = 25;
+        const intervalTime = 65;
+        let lastTargetSeat = null;
+
+        const interval = setInterval(() => {
+            if (lastTargetSeat) {
+                lastTargetSeat.classList.remove('active');
+            }
+
+            const randomIndex = Math.floor(Math.random() * emptySeats.length);
+            lastTargetSeat = emptySeats[randomIndex];
+            
+            lastTargetSeat.classList.add('active');
+            playTickSound();
+
+            counter++;
+
+            if (counter >= totalRuns) {
+                clearInterval(interval);
+                
+                lastTargetSeat.classList.remove('active');
+                lastTargetSeat.classList.add('filled', 'winner');
+                lastTargetSeat.innerText = currentStudent;
+                
+                playWinSound();
+                triggerConfetti(); // Bắn pháo hoa
+
+                setTimeout(() => {
+                    lastTargetSeat.classList.remove('winner');
+                }, 1500);
+
+                students.shift();
+                setStudentArray(students);
+
+                document.getElementById('statusText').innerText = `🎉 Đã xếp ${currentStudent} vào vị trí!`;
+                isSpinning = false;
+                document.getElementById('spinBtn').disabled = false;
+                
+                updateEmptySeatsList();
+            }
+        }, intervalTime);
+    }
+
+    function resetAll() {
+        if (confirm('Bạn có chắc chắn muốn làm mới lại từ đầu?')) {
+            const allSeats = document.querySelectorAll('.seat');
+            allSeats.forEach(seat => {
+                seat.className = 'seat';
+                seat.innerText = '';
+            });
+            document.getElementById('statusText').innerText = 'Sẵn sàng quay';
+            updateEmptySeatsList();
+        }
+    }
+
+    // Mở khóa âm thanh ở lần chạm màn hình đầu tiên
+    window.addEventListener('touchstart', unlockAudio, { once: true });
+    window.addEventListener('click', unlockAudio, { once: true });
+
+    window.onload = renderSeating;
+</script>
+
+</body>
+</html>
